@@ -1,4 +1,4 @@
-import random, pygame, sys
+import random, pygame, sys, math
 from pygame.locals import *
 from random import randrange      
 
@@ -8,7 +8,7 @@ WIDTH = 800
 HEIGHT = 600
 n = 22
 m = 44
-brd = 1 #border size
+brd = 2 #border size
 
 
 fpsClock = pygame.time.Clock()
@@ -28,6 +28,12 @@ cityImg = pygame.image.load('C.png')
 
 global grid
 grid = [[0 for y in range(n)] for x in range(m)] #filling MxN space with 0
+
+def distance(x1,y1,x2,y2): #distance between 2 hexagons
+  L=0
+  L=math.sqrt((abs(x1-x2))**2+(abs(y1-y2))**2)
+  return(L)
+  
 
 def zerocheck(x,y):  #TRUE if at least 1 water hexagon nearby
   waternearby=0
@@ -176,7 +182,7 @@ def generate(m,n,grid):  #map generation
        grid[x+1][y+1]=7
        grid[x+1][y]=7
 
- cities=0                 #cities
+ cities=0                 #cities - simple placement way
  for i in range(4):         
   citycheck=0
   while citycheck==0:   
@@ -199,7 +205,41 @@ def generate(m,n,grid):  #map generation
  for x in range(m):               
    for y in range (n):
      if grid[x][y]!=0:
-       earth+=1 
+       earth+=1
+
+## CityCount = 0    #not working method of placing cities based on distances among them
+## CityDistance = 0
+## Cities = 4       # how many supposed to be
+## PlacedCities = [[0, 0] for i in range(Cities)]  
+## while CityCount < Cities:          
+##  if CityCount == 0:
+##   x = randrange(brd,m/2-3)   
+##   y = randrange(brd,n/2-3)
+##  else:
+##   x = randrange(brd,m-brd)   
+##   y = randrange(brd,n-brd)
+##  if grid[x][y] != 0 :
+##    if CityCount == 0:
+##      grid[x][y] = 2
+##      PlacedCities[CityCount] = [x,y]
+##      CityCount+=1
+##    else:
+##      for i in range(CityCount):
+##        if distance(x,y,PlacedCities[i][0],PlacedCities[i][1]) < 5:
+##          CityDistance = 1
+##      if CityDistance == 0:
+##          grid[x][y]=2
+##          PlacedCities[CityCount] = [x,y]
+##          CityCount+=1
+##
+## print (PlacedCities)
+
+
+
+    
+
+
+       
 
  print ('')
  print ((100*earth)/(m*n),'% земли.')
@@ -209,7 +249,6 @@ def generate(m,n,grid):  #map generation
 
 
 generate(m,n,grid)                             #*****************PROGRAMM****************
-
 
 ##pygame.mixer.music.load('Turtle_Dance_3.mp3') #background music pls
 ##pygame.mixer.music.play(-1,0.0)

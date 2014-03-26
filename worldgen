@@ -6,8 +6,6 @@ pygame.init()
 FPS = 30
 WIDTH = 800
 HEIGHT = 600
-n = 22
-m = 44
 brd = 2 #border size
 
 
@@ -23,9 +21,12 @@ factoryImg = pygame.image.load('factory.png')
 cloudImg = pygame.image.load('cloud.png').convert_alpha()
 
 
-global grid
+global dyngrid,grid,m,n
+n = 22
+m = 44
+clouds=0
 grid = [[0 for y in range(n)] for x in range(m)] #filling MxN space with 0
-dyngrid = grid #this grid can be changed during the game instead of previous one
+dyngrid = [[0 for y in range(n)] for x in range(m)] #this grid can be changed during the game instead of previous one
 
 def distance(x1,y1,x2,y2): #distance between 2 hexagons
   L=0
@@ -43,44 +44,36 @@ def zerocheck(x,y):  #TRUE if at least 1 water hexagon nearby
       waternearby=1      
   return(waternearby)
 
-def nearby(HexType,x,y): #shows how many hexagons of "HexType" is nearby
+def nearby(GridType,HexType,x,y): #shows how many hexagons of "HexType" is nearby
     HexTypeCount=0
     if x%2==0:
-        if grid[x][y-1]==HexType:
+        if GridType[x][y-1]==HexType:
           HexTypeCount+=1
-        if grid[x+1][y-1]==HexType:
+        if GridType[x+1][y-1]==HexType:
           HexTypeCount+=1
-        if grid[x+1][y]==HexType:
+        if GridType[x+1][y]==HexType:
           HexTypeCount+=1          
-        if grid[x][y+1]==HexType:
+        if GridType[x][y+1]==HexType:
           HexTypeCount+=1          
-        if grid[x-1][y]==HexType:
+        if GridType[x-1][y]==HexType:
           HexTypeCount+=1
-        if grid[x-1][y-1]==HexType:
+        if GridType[x-1][y-1]==HexType:
           HexTypeCount+=1
     else:
-        if grid[x][y-1]==HexType:
+        if GridType[x][y-1]==HexType:
           HexTypeCount+=1
-        if grid[x+1][y+1]==HexType:
+        if GridType[x+1][y+1]==HexType:
           HexTypeCount+=1
-        if grid[x+1][y]==HexType:
+        if GridType[x+1][y]==HexType:
           HexTypeCount+=1          
-        if grid[x][y+1]==HexType:
+        if GridType[x][y+1]==HexType:
           HexTypeCount+=1          
-        if grid[x-1][y]==HexType:
+        if GridType[x-1][y]==HexType:
           HexTypeCount+=1
-        if grid[x-1][y+1]==HexType:
+        if GridType[x-1][y+1]==HexType:
           HexTypeCount+=1      
     return(HexTypeCount)
 
-def blit_alpha(target, source, location, opacity):
-        x = location[0]
-        y = location[1]
-        temp = pygame.Surface((source.get_width(), source.get_height())).convert()
-        temp.blit(target, (-x, -y))
-        temp.blit(source, (0, 0))
-        temp.set_alpha(opacity)        
-        target.blit(temp, location) 
 
 def generate(m,n,grid):  #map generation
 
@@ -132,17 +125,17 @@ def generate(m,n,grid):  #map generation
  while earth<=0.28*m*n :   #additional fill
   x = randrange(brd,m-brd)   
   y = randrange(brd,n-brd)   
-  if nearby(1,x,y)>=4:
+  if nearby(grid,1,x,y)>=4:
    if grid[x][y]==0:
     if randrange(100)<50 :  
       grid[x][y] = 1
       earth+=1
-   if nearby(1,x,y)>=5:
+   if nearby(grid,1,x,y)>=5:
     if grid[x][y]==0:
      if randrange(100)<80 :  
       grid[x][y] = 1
       earth+=1
-   if nearby(1,x,y)>=3:
+   if nearby(grid,1,x,y)>=3:
     if grid[x][y]==0:
      if randrange(100)<25 :  
       grid[x][y] = 1
@@ -216,38 +209,20 @@ def generate(m,n,grid):  #map generation
     dyngrid[x][y] = 5
     factories+=1
 
-
- 
-
-## CityCount = 0    #not working method of placing cities based on distances among them
-## CityDistance = 0
-## Cities = 4       # how many supposed to be
-## PlacedCities = [[0, 0] for i in range(Cities)]  
-## while CityCount < Cities:          
-##  if CityCount == 0:
-##   x = randrange(brd,m/2-3)   
-##   y = randrange(brd,n/2-3)
-##  else:
-##   x = randrange(brd,m-brd)   
-##   y = randrange(brd,n-brd)
-##  if grid[x][y] != 0 :
-##    if CityCount == 0:
-##      grid[x][y] = 2
-##      PlacedCities[CityCount] = [x,y]
-##      CityCount+=1
-##    else:
-##      for i in range(CityCount):
-##        if distance(x,y,PlacedCities[i][0],PlacedCities[i][1]) < 5:
-##          CityDistance = 1
-##      if CityDistance == 0:
-##          grid[x][y]=2
-##          PlacedCities[CityCount] = [x,y]
-##          CityCount+=1
-##
-## print (PlacedCities)
-
  return              #END OF "GENERATE" 
 
+
+
+def blit_alpha(target, source, location, opacity): #in the name of transparency!
+        x = location[0]
+        y = location[1]     
+        temp = pygame.Surface((source.get_width(), source.get_height())).convert()
+        temp.blit(target, (-x, -y))
+        temp.blit(source, (0, 0))
+        temp.set_alpha(opacity)        
+        target.blit(temp, location)
+   
+  
 
 def DisplayGrid(): #display grid : “odd-q” vertical layout
  dx=0       
@@ -284,34 +259,70 @@ def DisplayGrid(): #display grid : “odd-q” vertical layout
  return
 
 
-
-dx=0    #display dyngrid          
-for x in range(m):
+def DisplayDynGrid(opacity):  #display dyngrid
+ dx=0             
+ for x in range(m):
       dy=0
       if x%2 == 0:
        for y in range (n):           
            if dyngrid[x][y]==5:
                DISPLAYSURF.blit(factoryImg,(x+dx,y+dy))
+           elif dyngrid[x][y]==9:
+               blit_alpha(DISPLAYSURF, cloudImg, (x+dx,y+dy), opacity)
            dy+=22
       else:
        dy=11
        for y in range (n):              
            if dyngrid[x][y]==5:
                DISPLAYSURF.blit(factoryImg,(x+dx,y+dy))
+           elif dyngrid[x][y]==9:
+               blit_alpha(DISPLAYSURF, cloudImg, (x+dx,y+dy), opacity)
            dy+=22
       dx+=17
-      
-    
 
+def CreateClouds():  #cloud generation               
+ clouds=0
+ while clouds<=0.05*m*n:
+     x = randrange(brd,m-brd)   
+     y = randrange(brd,n-brd)
+     if nearby(dyngrid,9,x,y)>2 and grid[x][y]!=0 :
+       if randrange(100)<55:
+         dyngrid[x][y]=9
+         clouds+=1
+     if nearby(dyngrid,9,x,y)>1 and grid[x][y]==0 :
+       if randrange(100)<50:
+         dyngrid[x][y]=9
+         clouds+=1
+     if nearby(dyngrid,9,x,y)>0 and grid[x][y]==0 :
+       if randrange(100)<45:
+         dyngrid[x][y]=9
+         clouds+=1
+     if randrange(100)<2:
+         dyngrid[x][y]=9
+         clouds+=1 
 
-
-        
+def RemoveClouds(): #partially removes clouds every _?_ seconds
+ for x in range(m):
+    for y in range (n):
+      if dyngrid[x][y]==9 and nearby(dyngrid,9,x,y)<2:
+        if randrange(100)<15:
+           dyngrid[x][y]=0
+      if dyngrid[x][y]==9 and nearby(dyngrid,9,x,y)<3:
+        if randrange(100)<15:
+           dyngrid[x][y]=0      
+      if dyngrid[x][y]==9 and nearby(dyngrid,9,x,y)<4:
+        if randrange(100)<10:
+           dyngrid[x][y]=0
+      if dyngrid[x][y]==9 and nearby(dyngrid,9,x,y)<5:
+        if randrange(100)<8:
+           dyngrid[x][y]=0
+      if dyngrid[x][y]==9 and nearby(dyngrid,9,x,y)<6:
+        if randrange(100)<5:
+           dyngrid[x][y]=0        
 
 generate(m,n,grid)                             #*****************PROGRAMM****************
-
-
-##pygame.mixer.music.load('Turtle_Dance_3.mp3') #background music pls
-##pygame.mixer.music.play(-1,0.0)
+CreateClouds()
+ 
 
 
 ##for x in range(m):                #print transposed map in text form
@@ -326,23 +337,29 @@ generate(m,n,grid)                             #*****************PROGRAMM*******
 
 i=32         #opacity modifier
 opacity=32
+CloudCounter=5
 while True:    
- #DISPLAYSURF.fill((0,0,0))
+ DISPLAYSURF.fill((0,0,0))
  DisplayGrid()
 
- if opacity <= 127  and  i>0:
+ if CloudCounter==5:
+   RemoveClouds()
+   
+   CreateClouds()
+   CloudCounter=0
+ if opacity <= 96 and  i>0:
   i=  32
- if opacity >= 225 and i>0:
+ if opacity >= 225 and  i>0:
   i= -32
  if opacity <= 225 and  i<0:
   i= -32
- if opacity <= 127  and  i<0:
+ if opacity <= 96 and  i<0:
   i=  32
- opacity = opacity + i
- 
- time.sleep(0.1)
- blit_alpha(DISPLAYSURF, cloudImg, (160,160), opacity)
- 
+ opacity = opacity + i 
+ time.sleep(0.08)
+ DisplayDynGrid(opacity)
+ CloudCounter+=1
+
     
  for event in pygame.event.get():
          if event.type == QUIT:

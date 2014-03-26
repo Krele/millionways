@@ -1,4 +1,4 @@
-import random, pygame, sys, math
+import random, pygame, sys, math, time
 from pygame.locals import *
 from random import randrange      
 
@@ -19,15 +19,13 @@ waterImg = pygame.image.load('W.png')
 rockImg = pygame.image.load('M.png')
 forestImg = pygame.image.load('F.png')
 cityImg = pygame.image.load('C.png')
-
-
-
-
-
+factoryImg = pygame.image.load('factory.png')
+cloudImg = pygame.image.load('cloud.png').convert_alpha()
 
 
 global grid
 grid = [[0 for y in range(n)] for x in range(m)] #filling MxN space with 0
+dyngrid = grid #this grid can be changed during the game instead of previous one
 
 def distance(x1,y1,x2,y2): #distance between 2 hexagons
   L=0
@@ -74,6 +72,15 @@ def nearby(HexType,x,y): #shows how many hexagons of "HexType" is nearby
         if grid[x-1][y+1]==HexType:
           HexTypeCount+=1      
     return(HexTypeCount)
+
+def blit_alpha(target, source, location, opacity):
+        x = location[0]
+        y = location[1]
+        temp = pygame.Surface((source.get_width(), source.get_height())).convert()
+        temp.blit(target, (-x, -y))
+        temp.blit(source, (0, 0))
+        temp.set_alpha(opacity)        
+        target.blit(temp, location) 
 
 def generate(m,n,grid):  #map generation
 
@@ -148,8 +155,6 @@ def generate(m,n,grid):  #map generation
    if zerocheck(x,y)==0:
       grid[x][y]=4
       mountains+=1
-
-
  while mountains<=0.15*earth:
   for x in range(brd,m-brd):
    for y in range(brd,n-brd):
@@ -160,11 +165,7 @@ def generate(m,n,grid):  #map generation
           ry=randrange(3)-1
           if ry!=rx:
             grid[x+rx][y+ry]=4
-            mountains+=1         #*********
-
-
- 
-     
+            mountains+=1         
      
 
  forest = 0          #forest placement on "earth"
@@ -207,6 +208,17 @@ def generate(m,n,grid):  #map generation
      if grid[x][y]!=0:
        earth+=1
 
+ factories=0
+ while factories<5 :
+  x = randrange(brd,m-brd)   
+  y = randrange(brd,n-brd)
+  if grid[x][y] == 1:
+    dyngrid[x][y] = 5
+    factories+=1
+
+
+ 
+
 ## CityCount = 0    #not working method of placing cities based on distances among them
 ## CityDistance = 0
 ## Cities = 4       # how many supposed to be
@@ -234,39 +246,12 @@ def generate(m,n,grid):  #map generation
 ##
 ## print (PlacedCities)
 
-
-
-    
-
-
-       
-
- print ('')
- print ((100*earth)/(m*n),'% земли.')
  return              #END OF "GENERATE" 
 
 
-
-
-generate(m,n,grid)                             #*****************PROGRAMM****************
-
-##pygame.mixer.music.load('Turtle_Dance_3.mp3') #background music pls
-##pygame.mixer.music.play(-1,0.0)
-
-
-##for x in range(m):                #print transposed map in text form
-## print ('');
-## if x%2==0 : 
-##   for y in range (n):
-##     print (grid[x][y], end=" ")
-## else:
-##   for y in range (n):             #
-##     print ('',grid[x][y], end="") #
-
-
-while True:    #.png's placement
-    dx=0
-    for x in range(m):
+def DisplayGrid(): #display grid : “odd-q” vertical layout
+ dx=0       
+ for x in range(m):
       dy=0
       if x%2 == 0:
        for y in range (n):
@@ -296,14 +281,75 @@ while True:    #.png's placement
                DISPLAYSURF.blit(rockImg,(x+dx,y+dy))
            dy+=22
       dx+=17
-           
+ return
+
+
+
+dx=0    #display dyngrid          
+for x in range(m):
+      dy=0
+      if x%2 == 0:
+       for y in range (n):           
+           if dyngrid[x][y]==5:
+               DISPLAYSURF.blit(factoryImg,(x+dx,y+dy))
+           dy+=22
+      else:
+       dy=11
+       for y in range (n):              
+           if dyngrid[x][y]==5:
+               DISPLAYSURF.blit(factoryImg,(x+dx,y+dy))
+           dy+=22
+      dx+=17
+      
     
-    for event in pygame.event.get():
+
+
+
+        
+
+generate(m,n,grid)                             #*****************PROGRAMM****************
+
+
+##pygame.mixer.music.load('Turtle_Dance_3.mp3') #background music pls
+##pygame.mixer.music.play(-1,0.0)
+
+
+##for x in range(m):                #print transposed map in text form
+## print ('');
+## if x%2==0 : 
+##   for y in range (n):
+##     print (grid[x][y], end=" ")
+## else:
+##   for y in range (n):             #
+##     print ('',grid[x][y], end="") #
+
+
+i=32         #opacity modifier
+opacity=32
+while True:    
+ #DISPLAYSURF.fill((0,0,0))
+ DisplayGrid()
+
+ if opacity <= 127  and  i>0:
+  i=  32
+ if opacity >= 225 and i>0:
+  i= -32
+ if opacity <= 225 and  i<0:
+  i= -32
+ if opacity <= 127  and  i<0:
+  i=  32
+ opacity = opacity + i
+ 
+ time.sleep(0.1)
+ blit_alpha(DISPLAYSURF, cloudImg, (160,160), opacity)
+ 
+    
+ for event in pygame.event.get():
          if event.type == QUIT:
              pygame.quit()
              sys.exit()
-    pygame.display.update()
-    fpsClock.tick(FPS)
+ pygame.display.update()
+ fpsClock.tick(FPS)   
     
             
      
